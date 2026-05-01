@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Season Pass</title>
+  <script src="https://portals-labs.github.io/portals-sdk/portals-sdk.js?v=10005456"></script>
+  <style>
+    @font-face {
+      font-family: 'ObelixPro';
+      src: url('./obelix-pro-3.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      --gold-1: #ffd437;
+      --gold-2: #ffc400;
+      --gold-3: #f3b004;
+      --gold-4: #ffef99;
+      --gold-dim: #a87c00;
+      --track-1: rgba(89, 66, 41, 0.88);
+      --track-2: rgba(67, 48, 30, 0.92);
+      --node-locked: rgba(48, 33, 15, 0.96);
+      --node-locked-border: rgba(120, 88, 42, 0.55);
+      --node-unlocked-border: rgba(255, 212, 55, 0.90);
+      --node-current-glow: rgba(255, 210, 55, 0.55);
+      --reward-locked-bg: rgba(38, 26, 10, 0.92);
+      --reward-unlocked-bg: rgba(68, 48, 14, 0.95);
+      --reward-current-bg: rgba(90, 62, 5, 0.98);
+      --text-white: rgba(255, 255, 255, 0.98);
+      --text-dim: rgba(255, 255, 255, 0.38);
+      --text-mid: rgba(255, 255, 255, 0.62);
+      --shadow-strong: 0 7px 15px rgba(0, 0, 0, 0.32);
+      --tier-w: 76px;
+      --track-h: 10px;
+      --node-r: 22px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: flex-start;
+      padding: 12px 14px;
+      font-family: 'ObelixPro', Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
+      user-select: none;
+      pointer-events: none;
+      color: var(--text-white);
+    }
+
+    .sp-panel {
+      width: min(660px, calc(100vw - 28px));
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      pointer-events: auto;
+    }
+
+    /* ── Header ───────────────────────────────── */
+    .sp-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: 0 2px 0 4px;
+    }
+
+    .sp-title-group { display: flex; align-items: baseline; gap: 7px; }
+
+    .sp-title {
+      font-size: 15px;
+      line-height: 1;
+      letter-spacing: 0.3px;
+      color: var(--gold-1);
+      text-shadow: 0 0 14px rgba(255, 210, 55, 0.38);
+    }
+
+    .sp-season {
+      font-size: 9px;
+      line-height: 1;
+      color: var(--text-mid);
+      letter-spacing: 0.6px;
+    }
+
+    .sp-xp-label {
+      font-size: 9px;
+      line-height: 1;
+      color: var(--text-mid);
+      letter-spacing: 0.2px;
+    }
+
+    /* ── Track shell ──────────────────────────── */
+    .sp-track-shell {
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+      filter: drop-shadow(0 5px 8px rgba(0,0,0,0.28));
+    }
+
+    .sp-track-scroll {
+      overflow-x: auto;
+      overflow-y: visible;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      padding: 0 6px 4px;
+    }
+    .sp-track-scroll::-webkit-scrollbar { display: none; }
+
+    .sp-track-inner {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      position: relative;
+      width: max-content;
+      padding: 6px 0 2px;
+    }
+
+    /* ── Tier column ──────────────────────────── */
+    .tier {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: var(--tier-w);
+      flex-shrink: 0;
+      position: relative;
+      gap: 0;
+    }
+
+    /* Reward card */
+    .reward-card {
+      width: 60px;
+      min-height: 50px;
+      border-radius: 5px;
+      border: 1px solid rgba(120, 88, 42, 0.38);
+      background: var(--reward-locked-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 5px 3px 4px;
+      transition: border-color 0.3s, background 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .reward-card.unlocked {
+      background: var(--reward-unlocked-bg);
+      border-color: rgba(255, 196, 0, 0.50);
+    }
+
+    .reward-card.current {
+      background: var(--reward-current-bg);
+      border-color: var(--gold-2);
+      box-shadow: 0 0 10px rgba(255, 196, 0, 0.32);
+    }
+
+    .reward-card.current::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0) 100%);
+      pointer-events: none;
+    }
+
+    .reward-icon {
+      font-size: 18px;
+      line-height: 1;
+      filter: grayscale(0.7) brightness(0.65);
+      transition: filter 0.3s;
+    }
+
+    .reward-card.unlocked .reward-icon,
+    .reward-card.current .reward-icon {
+      filter: grayscale(0) brightness(1);
+    }
+
+    .reward-name {
+      font-size: 6px;
+      line-height: 1.2;
+      text-align: center;
+      color: var(--text-dim);
+      letter-spacing: 0.2px;
+      max-width: 56px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: color 0.3s;
+    }
+
+    .reward-card.unlocked .reward-name,
+    .reward-card.current .reward-name {
+      color: var(--text-mid);
+    }
+
+    .reward-card.current .reward-name {
+      color: var(--gold-4);
+    }
+
+    /* Lock icon overlay */
+    .reward-lock {
+      position: absolute;
+      top: 3px;
+      right: 3px;
+      width: 9px;
+      height: 9px;
+      opacity: 0.42;
+    }
+
+    .reward-card.unlocked .reward-lock,
+    .reward-card.current .reward-lock {
+      display: none;
+    }
+
+    /* Connector stem (vertical line from card to track) */
+    .tier-stem {
+      width: 2px;
+      height: 10px;
+      background: linear-gradient(180deg, rgba(120, 88, 42, 0.30) 0%, rgba(120, 88, 42, 0.18) 100%);
+      transition: background 0.3s;
+    }
+
+    .tier.unlocked .tier-stem,
+    .tier.current .tier-stem {
+      background: linear-gradient(180deg, rgba(255, 196, 0, 0.50) 0%, rgba(255, 196, 0, 0.22) 100%);
+    }
+
+    /* Track bar row (contains horizontal bar + node circle) */
+    .tier-track-row {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      height: 44px;
+      position: relative;
+      justify-content: center;
+    }
+
+    /* The horizontal bar segments are drawn as a single continuous
+       background behind all tiers via the .sp-track-bg element.
+       Each tier only owns a node circle. */
+
+    .tier-node {
+      width: calc(var(--node-r) * 2);
+      height: calc(var(--node-r) * 2);
+      border-radius: 50%;
+      border: 2.5px solid var(--node-locked-border);
+      background: var(--node-locked);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 2;
+      transition: border-color 0.35s, background 0.35s, box-shadow 0.35s;
+      flex-shrink: 0;
+    }
+
+    .tier.unlocked .tier-node {
+      background: linear-gradient(180deg, #ffc400 0%, #f3a000 100%);
+      border-color: var(--node-unlocked-border);
+      box-shadow: 0 0 8px rgba(255, 196, 0, 0.35);
+    }
+
+    .tier.current .tier-node {
+      background: linear-gradient(180deg, #ffd64a 0%, #f3a000 100%);
+      border-color: var(--gold-1);
+      box-shadow:
+        0 0 0 4px rgba(255, 210, 55, 0.22),
+        0 0 14px rgba(255, 196, 0, 0.55);
+      animation: node-pulse 2.1s ease-in-out infinite;
+    }
+
+    .tier-node-inner {
+      font-size: 9px;
+      line-height: 1;
+      color: rgba(255, 255, 255, 0.45);
+      letter-spacing: 0.1px;
+      transition: color 0.3s;
+    }
+
+    .tier.unlocked .tier-node-inner {
+      color: rgba(80, 50, 0, 0.90);
+    }
+
+    .tier.current .tier-node-inner {
+      color: rgba(80, 50, 0, 0.95);
+      font-size: 10px;
+    }
+
+    /* Check mark for unlocked (except current) */
+    .tier.unlocked:not(.current) .tier-node-inner::before {
+      content: '✓';
+    }
+
+    .tier.unlocked:not(.current) .node-num { display: none; }
+
+    /* Tier number below */
+    .tier-num-label {
+      font-size: 8px;
+      line-height: 1;
+      color: var(--text-dim);
+      margin-top: 6px;
+      letter-spacing: 0.3px;
+      transition: color 0.3s;
+    }
+
+    .tier.current .tier-num-label { color: var(--gold-4); }
+    .tier.unlocked:not(.current) .tier-num-label { color: var(--text-mid); }
+
+    /* ── Continuous track bar (behind all tiers) ── */
+    .sp-track-bg {
+      position: absolute;
+      left: 0; right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 0;
+    }
+
+    .track-rail {
+      height: var(--track-h);
+      background: linear-gradient(90deg, var(--track-1), var(--track-2));
+      position: relative;
+      overflow: hidden;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.32);
+    }
+
+    .track-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 0%;
+      background: linear-gradient(90deg, #f2b103 0%, #ffc400 55%, #ffdc57 100%);
+      box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.22);
+      transition: width 0s;
+      will-change: width;
+    }
+
+    .track-fill::after {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0;
+      right: -3px;
+      width: 8px;
+      background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.7) 55%, rgba(255,255,255,0) 100%);
+      filter: blur(0.5px);
+      opacity: 0.85;
+    }
+
+    /* ── Footer ───────────────────────────────── */
+    .sp-footer {
+      padding: 0 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sp-footer-label {
+      font-size: 8px;
+      color: var(--text-dim);
+      letter-spacing: 0.3px;
+    }
+
+    .sp-footer-highlight {
+      font-size: 8px;
+      color: var(--gold-4);
+      letter-spacing: 0.2px;
+    }
+
+    /* ── Collapsed button ─────────────────────── */
+    .sp-toggle-btn {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      height: 36px;
+      padding: 0 16px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(89,66,41,0.96) 0%, rgba(52,36,16,0.98) 100%);
+      border: 1.5px solid rgba(120,88,42,0.55);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.07);
+      cursor: pointer;
+      pointer-events: auto;
+      overflow: hidden;
+      transition: border-color 0.25s, box-shadow 0.25s, transform 0.12s;
+    }
+
+    .sp-toggle-btn:hover {
+      border-color: rgba(255,196,0,0.55);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.42), 0 0 10px rgba(255,196,0,0.14), inset 0 1px 0 rgba(255,255,255,0.07);
+    }
+
+    .sp-toggle-btn:active { transform: scale(0.97); }
+
+    .sp-btn-label {
+      font-size: 12px;
+      line-height: 1;
+      letter-spacing: 0.3px;
+      color: var(--text-white);
+      text-shadow: 0 1px 4px rgba(0,0,0,0.45);
+      white-space: nowrap;
+    }
+
+    .sp-btn-chevron {
+      width: 10px;
+      height: 10px;
+      flex-shrink: 0;
+      transition: transform 0.32s cubic-bezier(.4,0,.2,1);
+      opacity: 0.75;
+    }
+
+    .sp-panel.open .sp-btn-chevron { transform: rotate(180deg); }
+
+    .sp-btn-tier {
+      font-size: 9px;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(255,212,55,0.22) 0%, rgba(255,196,0,0.14) 100%);
+      border: 1px solid rgba(255,196,0,0.38);
+      color: var(--gold-4);
+      letter-spacing: 0.2px;
+      white-space: nowrap;
+    }
+
+    /* Shimmer sweep */
+    .sp-btn-sweep {
+      position: absolute;
+      inset: -4% auto -4% -18%;
+      width: 14%;
+      opacity: 0;
+      background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,252,223,0.60) 50%, rgba(255,255,255,0) 100%);
+      transform: skewX(-20deg);
+      filter: blur(1.5px);
+      mix-blend-mode: screen;
+      pointer-events: none;
+    }
+
+    .sp-toggle-btn.shimmer .sp-btn-sweep {
+      animation: btn-sweep 850ms ease-out 1;
+    }
+
+    /* XP hit glow */
+    .sp-toggle-btn.xp-hit {
+      animation: btn-hit 680ms cubic-bezier(.19,.89,.32,1);
+    }
+
+    /* +XP float text */
+    .sp-btn-gain {
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 4px);
+      transform: translateX(-50%);
+      font-size: 10px;
+      line-height: 1;
+      color: #fff7bf;
+      text-shadow: 0 1px 5px rgba(0,0,0,0.55), 0 0 7px rgba(255,227,116,0.75);
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    .sp-btn-gain.show {
+      animation: btn-gain-float 1.2s cubic-bezier(.2,.76,.15,1) forwards;
+    }
+
+    /* Panel expand/collapse */
+    .sp-expandable {
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transition: max-height 0.38s cubic-bezier(.4,0,.2,1), opacity 0.28s ease;
+      pointer-events: none;
+    }
+
+    .sp-panel.open .sp-expandable {
+      max-height: 220px;
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* ── Animations ───────────────────────────── */
+    @keyframes node-pulse {
+      0%, 100% { box-shadow: 0 0 0 4px rgba(255,210,55,0.22), 0 0 14px rgba(255,196,0,0.55); }
+      50%       { box-shadow: 0 0 0 7px rgba(255,210,55,0.14), 0 0 22px rgba(255,196,0,0.72); }
+    }
+
+    @keyframes tier-unlock {
+      0%   { transform: scale(0.82); opacity: 0.5; }
+      55%  { transform: scale(1.08); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes btn-sweep {
+      0%   { opacity: 0; left: -18%; }
+      12%  { opacity: 0.95; }
+      100% { opacity: 0; left: 66%; }
+    }
+
+    @keyframes btn-hit {
+      0%   { border-color: rgba(120,88,42,0.55); box-shadow: 0 4px 12px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.07); }
+      28%  { border-color: rgba(255,210,55,0.90); box-shadow: 0 4px 18px rgba(0,0,0,0.40), 0 0 20px rgba(255,196,0,0.58), inset 0 1px 0 rgba(255,255,255,0.10); }
+      100% { border-color: rgba(120,88,42,0.55); box-shadow: 0 4px 12px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.07); }
+    }
+
+    @keyframes btn-gain-float {
+      0%   { opacity: 0; transform: translateX(-50%) translateY(0) scale(0.88); }
+      18%  { opacity: 1; transform: translateX(-50%) translateY(-10px) scale(1.02); }
+      70%  { opacity: 1; transform: translateX(-50%) translateY(-18px) scale(1.0); }
+      100% { opacity: 0; transform: translateX(-50%) translateY(-28px) scale(0.95); }
+    }
+
+    .tier.just-unlocked .tier-node {
+      animation: tier-unlock 0.55s cubic-bezier(.17,.84,.44,1) forwards;
+    }
+  </style>
+</head>
+<body>
+
+<div class="sp-panel" id="spPanel">
+
+  <!-- Collapsed toggle button -->
+  <button class="sp-toggle-btn" id="toggleBtn" onclick="togglePanel()">
+    <div class="sp-btn-sweep"></div>
+    <span class="sp-btn-label">Season Pass</span>
+    <span class="sp-btn-tier" id="btnTierBadge">T1</span>
+    <svg class="sp-btn-chevron" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M1 1L5 5L9 1" stroke="rgba(255,255,255,0.75)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+
+  <!-- Expandable content -->
+  <div class="sp-expandable" id="spExpandable">
+
+    <!-- Header -->
+    <div class="sp-header" style="margin-top:6px;">
+      <div class="sp-title-group">
+        <div class="sp-title">Season Pass</div>
+        <div class="sp-season">SEASON I</div>
+      </div>
+      <div class="sp-xp-label" id="xpLabel">0 / 3000 XP</div>
+    </div>
+
+    <!-- Track -->
+    <div class="sp-track-shell">
+      <div class="sp-track-scroll" id="trackScroll">
+        <div class="sp-track-inner" id="trackInner">
+          <div class="sp-track-bg" id="trackBg">
+            <div class="track-rail" id="trackRail">
+              <div class="track-fill" id="trackFill"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="sp-footer">
+      <div class="sp-footer-label" id="footerLeft">Loading...</div>
+      <div class="sp-footer-highlight" id="footerRight"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  /* ─── Config ────────────────────────────────────────────── */
+  const SUPABASE_URL  = 'https://tpdedcjccygpwkofdyqg.supabase.co';
+  const SUPABASE_KEY  = 'sb_publishable_kYGFYlXrQHt17-uihwy7tA_CxkbQYNH';
+  const POLL_INTERVAL = 30000;
+
+  const SEASON_TIERS  = 30;
+  const XP_PER_TIER   = 100;   // placeholder — swap for game-specific metric later
+  const TOTAL_SEASON_XP = SEASON_TIERS * XP_PER_TIER;
+
+  /* ─── Placeholder rewards ───────────────────────────────── */
+  const REWARDS = [
+    { icon: '🎖️',  name: 'Starter Badge'   },
+    { icon: '⚔️',  name: 'Bronze Sword'    },
+    { icon: '💰',  name: '50 Coins'        },
+    { icon: '🍃',  name: 'Leaf Cape'       },
+    { icon: '💨',  name: 'Sprint Trail'    },
+    { icon: '🛡️',  name: 'Iron Shield'     },
+    { icon: '💰',  name: '100 Coins'       },
+    { icon: '🎩',  name: 'Cloud Hat'       },
+    { icon: '✨',  name: 'Blue Trail'      },
+    { icon: '👢',  name: 'Iron Boots'      },
+    { icon: '💰',  name: '150 Coins'       },
+    { icon: '🔥',  name: 'Flame Emote'     },
+    { icon: '⛑️',  name: 'Gold Helmet'     },
+    { icon: '🦊',  name: 'Pet: Fox'        },
+    { icon: '⭐',  name: 'Star Badge'      },
+    { icon: '💰',  name: '200 Coins'       },
+    { icon: '🧣',  name: 'Shadow Cape'     },
+    { icon: '⚡',  name: 'Thunder Blade'   },
+    { icon: '💰',  name: '250 Coins'       },
+    { icon: '💃',  name: 'Dance Emote'     },
+    { icon: '💎',  name: 'Diamond Ring'    },
+    { icon: '💰',  name: '300 Coins'       },
+    { icon: '🐉',  name: 'Pet: Dragon'     },
+    { icon: '🌌',  name: 'Cosmic Trail'    },
+    { icon: '🔮',  name: 'Crystal Shield'  },
+    { icon: '💰',  name: '400 Coins'       },
+    { icon: '🌠',  name: 'Galaxy Helm'     },
+    { icon: '🎭',  name: 'Legend Emote'    },
+    { icon: '💰',  name: '500 Coins'       },
+    { icon: '👑',  name: 'Grand Champion'  },
+  ];
+
+  /* ─── State ─────────────────────────────────────────────── */
+  let currentUsername  = null;
+  let displayedXp      = 0;
+  let pollHandle       = null;
+  let hasInitialLoad   = false;
+  let animFrame        = null;
+
+  /* ─── DOM refs ──────────────────────────────────────────── */
+  const trackInner  = document.getElementById('trackInner');
+  const trackBg     = document.getElementById('trackBg');
+  const trackFill   = document.getElementById('trackFill');
+  const xpLabel     = document.getElementById('xpLabel');
+  const footerLeft  = document.getElementById('footerLeft');
+  const footerRight = document.getElementById('footerRight');
+  const trackScroll = document.getElementById('trackScroll');
+  const toggleBtn   = document.getElementById('toggleBtn');
+  const btnSweep    = toggleBtn.querySelector('.sp-btn-sweep');
+  const btnTierBadge = document.getElementById('btnTierBadge');
+  const spPanel     = document.getElementById('spPanel');
+
+  /* ─── Toggle panel ──────────────────────────────────────── */
+  function togglePanel() {
+    spPanel.classList.toggle('open');
+    if (spPanel.classList.contains('open')) {
+      requestAnimationFrame(() => {
+        updateFillBar(
+          deriveTierState(displayedXp).tiersFullyDone,
+          deriveTierState(displayedXp).pctInTier
+        );
+        scrollToCurrentTier();
+      });
+    }
+  }
+
+  /* ─── Button XP effects ──────────────────────────────────── */
+  function triggerButtonEffects(xpGain) {
+    const gain = Math.max(0, Number(xpGain) || 0);
+
+    toggleBtn.classList.remove('shimmer', 'xp-hit');
+    void toggleBtn.offsetWidth;
+    toggleBtn.classList.add('shimmer', 'xp-hit');
+
+    setTimeout(() => {
+      toggleBtn.classList.remove('shimmer', 'xp-hit');
+    }, 900);
+
+    if (gain > 0) {
+      const el = document.createElement('div');
+      el.className = 'sp-btn-gain';
+      el.textContent = '+' + gain + ' XP';
+      toggleBtn.appendChild(el);
+      requestAnimationFrame(() => el.classList.add('show'));
+      el.addEventListener('animationend', () => el.remove(), { once: true });
+    }
+  }
+
+  /* ─── Build static tier nodes ───────────────────────────── */
+  function buildTiers() {
+    REWARDS.forEach((r, i) => {
+      const tierNum = i + 1;
+      const col = document.createElement('div');
+      col.className = 'tier';
+      col.id = `tier-${tierNum}`;
+      col.innerHTML = `
+        <div class="reward-card" id="rc-${tierNum}">
+          <svg class="reward-lock" viewBox="0 0 10 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="1.5" y="5" width="7" height="6.5" rx="1" fill="rgba(255,255,255,0.45)"/>
+            <path d="M3 5V3.5a2 2 0 0 1 4 0V5" stroke="rgba(255,255,255,0.45)" stroke-width="1.2" fill="none"/>
+          </svg>
+          <div class="reward-icon">${r.icon}</div>
+          <div class="reward-name">${r.name}</div>
+        </div>
+        <div class="tier-stem"></div>
+        <div class="tier-track-row">
+          <div class="tier-node" id="tn-${tierNum}">
+            <div class="tier-node-inner">
+              <span class="node-num">${tierNum}</span>
+            </div>
+          </div>
+        </div>
+        <div class="tier-num-label">T${tierNum}</div>
+      `;
+      trackInner.appendChild(col);
+    });
+
+    /* Ensure the track-bg rail spans the full inner width */
+    requestAnimationFrame(() => {
+      const innerW = trackInner.scrollWidth;
+      trackBg.style.width  = innerW + 'px';
+      trackBg.style.left   = '0';
+    });
+  }
+
+  /* ─── Derive tier state from totalXp ────────────────────── */
+  function deriveTierState(totalXp) {
+    const xp        = Math.max(0, Number(totalXp) || 0);
+    const tiersFullyDone = Math.floor(xp / XP_PER_TIER);
+    const currentTier    = Math.min(tiersFullyDone + 1, SEASON_TIERS);
+    const xpIntoTier     = xp - tiersFullyDone * XP_PER_TIER;
+    const pctInTier      = xpIntoTier / XP_PER_TIER;
+    return { xp, tiersFullyDone, currentTier, xpIntoTier, pctInTier };
+  }
+
+  /* ─── Update fill bar position ──────────────────────────── */
+  function updateFillBar(tiersFullyDone, pctInTier) {
+    const tierCount = SEASON_TIERS;
+    const tierW = trackInner.scrollWidth / tierCount;
+    const nodeRadius = 22; /* --node-r */
+
+    /* Each tier's center is at (i + 0.5) * tierW.
+       The fill travels from node center to node center. */
+    const firstNodeCx = tierW * 0.5;
+    const lastNodeCx  = tierW * (tierCount - 0.5);
+    const totalSpan   = lastNodeCx - firstNodeCx;
+
+    const completedSpan = tiersFullyDone === 0
+      ? 0
+      : (tierW * (tiersFullyDone - 1) + tierW * pctInTier);
+
+    /* Pixel offset from the left edge of the rail to the fill end */
+    const fillPx = firstNodeCx + completedSpan;
+
+    const railW = trackBg.offsetWidth || 1;
+    const pct   = Math.min(100, (fillPx / railW) * 100);
+    trackFill.style.width = pct + '%';
+  }
+
+  /* ─── Render all tiers ──────────────────────────────────── */
+  function renderTiers(totalXp) {
+    const { xp, tiersFullyDone, currentTier, xpIntoTier, pctInTier } = deriveTierState(totalXp);
+
+    xpLabel.textContent = `${Math.round(xp)} / ${TOTAL_SEASON_XP} XP`;
+
+    for (let i = 1; i <= SEASON_TIERS; i++) {
+      const col = document.getElementById(`tier-${i}`);
+      const rc  = document.getElementById(`rc-${i}`);
+      if (!col || !rc) continue;
+
+      col.classList.remove('unlocked', 'current', 'locked');
+      rc.classList.remove('unlocked', 'current');
+
+      if (i < currentTier) {
+        col.classList.add('unlocked');
+        rc.classList.add('unlocked');
+      } else if (i === currentTier) {
+        col.classList.add('unlocked', 'current');
+        rc.classList.add('unlocked', 'current');
+      } else {
+        col.classList.add('locked');
+      }
+    }
+
+    updateFillBar(tiersFullyDone, pctInTier);
+    displayedXp = xp;
+
+    /* Update button badge */
+    if (btnTierBadge) btnTierBadge.textContent = 'T' + currentTier;
+
+    /* Footer */
+    if (currentTier >= SEASON_TIERS && xp >= TOTAL_SEASON_XP) {
+      footerLeft.textContent  = 'Season Pass complete!';
+      footerRight.textContent = 'All rewards unlocked';
+    } else {
+      const xpLeft = XP_PER_TIER - xpIntoTier;
+      footerLeft.textContent  = `Tier ${currentTier} / ${SEASON_TIERS}`;
+      footerRight.textContent = `${Math.ceil(xpLeft)} XP to next tier`;
+    }
+  }
+
+  /* ─── Animated XP transition ─────────────────────────────── */
+  function animateTo(targetXp) {
+    const startXp = displayedXp;
+    const endXp   = Math.max(0, Number(targetXp) || 0);
+    if (startXp === endXp) return;
+
+    const duration = Math.min(1400, Math.max(600, Math.abs(endXp - startXp) * 10));
+    const startAt  = performance.now();
+
+    if (animFrame) cancelAnimationFrame(animFrame);
+
+    function frame(now) {
+      const t      = Math.min(1, (now - startAt) / duration);
+      const eased  = 1 - Math.pow(1 - t, 3);
+      const val    = startXp + (endXp - startXp) * eased;
+
+      renderTiers(val);
+
+      if (t < 1) {
+        animFrame = requestAnimationFrame(frame);
+      } else {
+        animFrame = null;
+        renderTiers(endXp);
+        scrollToCurrentTier();
+      }
+    }
+
+    animFrame = requestAnimationFrame(frame);
+  }
+
+  /* ─── Scroll to current tier ─────────────────────────────── */
+  function scrollToCurrentTier() {
+    const { currentTier } = deriveTierState(displayedXp);
+    const el = document.getElementById(`tier-${currentTier}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
+
+  /* ─── Supabase helpers ───────────────────────────────────── */
+  function buildHeaders() {
+    return {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_KEY,
+    };
+  }
+
+  async function callRpc(fnName, body) {
+    const res  = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fnName}`, {
+      method: 'POST',
+      headers: buildHeaders(),
+      body: JSON.stringify(body),
+      cache: 'no-store',
+    });
+    const text = await res.text();
+    let data;
+    try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+    if (!res.ok) throw new Error(data?.message || String(data));
+    return Array.isArray(data) ? data[0] : data;
+  }
+
+  async function getPlayerProgress(username) {
+    return callRpc('get_player_progress', { p_username: username });
+  }
+
+  async function patchPlayerProgress(body) {
+    return callRpc('patch_player_progress', body);
+  }
+
+  /* ─── Polling ─────────────────────────────────────────────── */
+  async function refreshPlayer() {
+    if (!currentUsername) return;
+    try {
+      const row = await getPlayerProgress(currentUsername);
+      if (row && row.xp != null) {
+        const newXp = Number(row.xp) || 0;
+        if (newXp !== displayedXp) animateTo(newXp);
+      }
+    } catch (e) {
+      console.error('Season pass poll failed:', e);
+    }
+  }
+
+  function startPolling() {
+    if (pollHandle) clearInterval(pollHandle);
+    pollHandle = setInterval(refreshPlayer, POLL_INTERVAL);
+  }
+
+  /* ─── Portals message parsing ─────────────────────────────── */
+  function parseMessage(raw) {
+    const s = String(raw || '').trim();
+    try { const p = JSON.parse(s); if (p && typeof p === 'object') return p; } catch {}
+    const out = {};
+    const fields = ['username','xp_gain','xp_source','event_id','source_game','seen',
+      'plays_quadclaim','plays_memoryclaim','plays_gunspleef','plays_runspleef',
+      'wins_quadclaim','wins_memoryclaim','wins_gunspleef','wins_runspleef'];
+    const norm = s.replace(/=\s*(?=[\[{\"\-\dtruefalsen])/g,':').replace(/\r?\n/g,' ');
+    for (const f of fields) {
+      const m = norm.match(new RegExp(`${f}\\s*:\\s*(\\{.*?\\}|"[^"]*"|[^;\\s]+)`,'i'));
+      if (!m) continue;
+      const v = m[1].trim();
+      if (v.startsWith('"'))       out[f] = JSON.parse(v);
+      else if (v === 'true')       out[f] = true;
+      else if (v === 'false')      out[f] = false;
+      else if (!isNaN(Number(v))) out[f] = Number(v);
+      else                         out[f] = v;
+    }
+    return out;
+  }
+
+  function hasOwn(o,k){ return Object.prototype.hasOwnProperty.call(o,k); }
+
+  function extractNum(payload, field) {
+    let v = payload[field];
+    if (v && typeof v === 'object') v = v[payload.username];
+    return Math.floor(Number(v) || 0);
+  }
+
+  function buildPatch(payload) {
+    const username = String(payload.username || '').trim();
+    if (!username) throw new Error('Missing username');
+    const body = { p_username: username };
+    const map = {
+      xp_gain:'p_xp_gain', source_game:'p_source_game',
+      xp_source:'p_xp_source', event_id:'p_event_id',
+      pet_id:'p_pet_id', seen:'p_seen',
+    };
+    const counters = ['plays_quadclaim','plays_memoryclaim','plays_gunspleef','plays_runspleef',
+      'wins_quadclaim','wins_memoryclaim','wins_gunspleef','wins_runspleef'];
+    for (const [k,v] of Object.entries(map)) {
+      if (hasOwn(payload,k)) body[v] = typeof payload[k]==='boolean' ? payload[k] : extractNum(payload,k);
+    }
+    for (const f of counters) {
+      if (hasOwn(payload,f)) body[`p_${f}`] = Math.max(0, extractNum(payload,f));
+    }
+    return body;
+  }
+
+  /* ─── Main message handler ───────────────────────────────── */
+  async function handlePortalsMessage(message) {
+    try {
+      const payload  = parseMessage(message);
+      const username = typeof payload.username === 'string' ? payload.username : null;
+      if (!username) throw new Error('No username');
+
+      currentUsername = username;
+      const hasGain   = hasOwn(payload, 'xp_gain');
+      const xpGain    = hasGain ? Math.max(0, extractNum(payload,'xp_gain')) : 0;
+
+      const row = await patchPlayerProgress(buildPatch(payload));
+      if (!row || row.xp == null) throw new Error('No player row returned');
+
+      const newXp = Number(row.xp) || 0;
+
+      if (!hasInitialLoad) {
+        renderTiers(newXp);
+        scrollToCurrentTier();
+        hasInitialLoad = true;
+      } else if (hasGain && xpGain > 0 && newXp !== displayedXp) {
+        triggerButtonEffects(xpGain);
+        animateTo(newXp);
+      } else {
+        renderTiers(newXp);
+      }
+
+      startPolling();
+    } catch (e) {
+      console.error('Season pass message error:', e, message);
+    }
+  }
+
+  window.handlePortalsMessage = handlePortalsMessage;
+
+  /* ─── Init ───────────────────────────────────────────────── */
+  buildTiers();
+  renderTiers(0);
+
+  requestAnimationFrame(() => {
+    updateFillBar(0, 0);
+  });
+
+  PortalsSdk.setMessageListener((msg) => handlePortalsMessage(msg));
+</script>
+</body>
+</html>

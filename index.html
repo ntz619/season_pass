@@ -470,14 +470,17 @@
       overflow: hidden;
       max-height: 0;
       opacity: 0;
-      transition: max-height 0.38s cubic-bezier(.4,0,.2,1), opacity 0.28s ease;
+      visibility: hidden;
+      transition: max-height 0.30s cubic-bezier(.4,0,.2,1), opacity 0s, visibility 0s 0.30s;
       pointer-events: none;
     }
 
     .sp-panel.open .sp-expandable {
       max-height: 220px;
       opacity: 1;
+      visibility: visible;
       pointer-events: auto;
+      transition: max-height 0.34s cubic-bezier(.4,0,.2,1), opacity 0.22s ease 0.06s, visibility 0s;
     }
 
     /* ── Animations ───────────────────────────── */
@@ -634,8 +637,14 @@
 
   /* ─── Toggle panel ──────────────────────────────────────── */
   function togglePanel() {
-    spPanel.classList.toggle('open');
-    if (spPanel.classList.contains('open')) {
+    const isOpen = spPanel.classList.contains('open');
+    if (isOpen) {
+      /* Collapsing: remove open immediately — visibility:hidden + opacity:0 transition
+         ensures content is invisible before height collapses */
+      spPanel.classList.remove('open');
+    } else {
+      /* Expanding */
+      spPanel.classList.add('open');
       requestAnimationFrame(() => {
         repositionTrackBg();
         updateFillBar(

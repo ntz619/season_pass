@@ -917,6 +917,7 @@
 
   /* ─── Main message handler ───────────────────────────────── */
   async function handlePortalsMessage(message) {
+    console.trace('🔥 handlePortalsMessage fired', message);
     try {
       const payload  = parseMessage(message);
       const username = typeof payload.username === 'string' ? payload.username : null;

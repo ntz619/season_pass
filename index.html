@@ -838,6 +838,10 @@
     return callRpc('get_player_progress', { p_username: username });
   }
 
+  async function getPlayerSeasonProgress(username) {
+    return callRpc('get_player_season_progress', { p_username: username });
+  }
+
   async function patchPlayerProgress(body) {
     return callRpc('patch_player_progress', body);
   }
@@ -846,7 +850,7 @@
   async function refreshPlayer() {
     if (!currentUsername) return;
     try {
-      const row = await getPlayerProgress(currentUsername);
+      const row = await getPlayerSeasonProgress(currentUsername);
       if (row && row.xp != null) {
         const newXp = Number(row.xp) || 0;
         if (newXp !== displayedXp) animateTo(newXp);
@@ -922,10 +926,12 @@
       const hasGain   = hasOwn(payload, 'xp_gain');
       const xpGain    = hasGain ? Math.max(0, extractNum(payload,'xp_gain')) : 0;
 
-      const row = await patchPlayerProgress(buildPatch(payload));
-      if (!row || row.xp == null) throw new Error('No player row returned');
+      await patchPlayerProgress(buildPatch(payload));
 
-      const newXp = Number(row.xp) || 0;
+      const seasonRow = await getPlayerSeasonProgress(username);
+      if (!seasonRow || seasonRow.xp == null) throw new Error('No season progress returned');
+
+      const newXp = Number(seasonRow.xp) || 0;
 
       if (!hasInitialLoad) {
         renderTiers(newXp);

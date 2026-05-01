@@ -860,16 +860,12 @@
       }
 
       if (!hasInitialLoad) {
-        const row = await getPlayerSeasonProgress(username);
-        if (row && row.xp != null) {
-          const xp   = Number(row.xp) || 0;
-          lastKnownXp = xp;
-          renderTiers(xp);
-          scrollToCurrentTier();
-          hasInitialLoad = true;
-        }
-        startPolling();
-      }
+  hasInitialLoad = true;
+  startPolling();
+}
+
+// Every message triggers an immediate refresh
+await refreshPlayer();
     } catch (e) {
       console.error('Season pass message error:', e, message);
     }

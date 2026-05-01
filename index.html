@@ -33,9 +33,9 @@
       --text-dim: rgba(255, 255, 255, 0.38);
       --text-mid: rgba(255, 255, 255, 0.62);
       --shadow-strong: 0 7px 15px rgba(0, 0, 0, 0.32);
-      --tier-w: 76px;
-      --track-h: 10px;
-      --node-r: 22px;
+      --tier-w: 72px;
+      --track-h: 8px;
+      --node-r: 14px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -62,11 +62,15 @@
     }
 
     .sp-panel {
-      width: min(660px, calc(100vw - 28px));
-      display: flex;
+      width: auto;
+      display: inline-flex;
       flex-direction: column;
       gap: 6px;
       pointer-events: auto;
+    }
+
+    .sp-panel.open {
+      width: min(660px, calc(100vw - 28px));
     }
 
     /* ── Header ───────────────────────────────── */
@@ -115,7 +119,10 @@
       scrollbar-width: none;
       -ms-overflow-style: none;
       padding: 0 6px 4px;
+      pointer-events: auto;
+      cursor: grab;
     }
+    .sp-track-scroll:active { cursor: grabbing; }
     .sp-track-scroll::-webkit-scrollbar { display: none; }
 
     .sp-track-inner {
@@ -140,8 +147,8 @@
 
     /* Reward card */
     .reward-card {
-      width: 60px;
-      min-height: 50px;
+      width: 62px;
+      min-height: 66px;
       border-radius: 5px;
       border: 1px solid rgba(120, 88, 42, 0.38);
       background: var(--reward-locked-bg);
@@ -149,8 +156,8 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 3px;
-      padding: 5px 3px 4px;
+      gap: 4px;
+      padding: 7px 3px 6px;
       transition: border-color 0.3s, background 0.3s;
       position: relative;
       overflow: hidden;
@@ -176,7 +183,7 @@
     }
 
     .reward-icon {
-      font-size: 18px;
+      font-size: 26px;
       line-height: 1;
       filter: grayscale(0.7) brightness(0.65);
       transition: filter 0.3s;
@@ -242,7 +249,7 @@
       display: flex;
       align-items: center;
       width: 100%;
-      height: 44px;
+      height: 32px;
       position: relative;
       justify-content: center;
     }
@@ -282,7 +289,7 @@
     }
 
     .tier-node-inner {
-      font-size: 9px;
+      font-size: 7px;
       line-height: 1;
       color: rgba(255, 255, 255, 0.45);
       letter-spacing: 0.1px;
@@ -295,7 +302,7 @@
 
     .tier.current .tier-node-inner {
       color: rgba(80, 50, 0, 0.95);
-      font-size: 10px;
+      font-size: 7px;
     }
 
     /* Check mark for unlocked (except current) */
@@ -306,25 +313,15 @@
     .tier.unlocked:not(.current) .node-num { display: none; }
 
     /* Tier number below */
-    .tier-num-label {
-      font-size: 8px;
-      line-height: 1;
-      color: var(--text-dim);
-      margin-top: 6px;
-      letter-spacing: 0.3px;
-      transition: color 0.3s;
-    }
 
-    .tier.current .tier-num-label { color: var(--gold-4); }
-    .tier.unlocked:not(.current) .tier-num-label { color: var(--text-mid); }
 
     /* ── Continuous track bar (behind all tiers) ── */
     .sp-track-bg {
       position: absolute;
       left: 0; right: 0;
-      top: 50%;
-      transform: translateY(-50%);
+      top: 0;
       z-index: 0;
+      pointer-events: none;
     }
 
     .track-rail {
@@ -379,12 +376,12 @@
     /* ── Collapsed button ─────────────────────── */
     .sp-toggle-btn {
       position: relative;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 7px;
-      height: 36px;
-      padding: 0 16px;
+      gap: 5px;
+      height: 26px;
+      padding: 0 10px;
       border-radius: 999px;
       background: linear-gradient(180deg, rgba(89,66,41,0.96) 0%, rgba(52,36,16,0.98) 100%);
       border: 1.5px solid rgba(120,88,42,0.55);
@@ -393,6 +390,8 @@
       pointer-events: auto;
       overflow: hidden;
       transition: border-color 0.25s, box-shadow 0.25s, transform 0.12s;
+      width: auto;
+      align-self: flex-start;
     }
 
     .sp-toggle-btn:hover {
@@ -403,7 +402,7 @@
     .sp-toggle-btn:active { transform: scale(0.97); }
 
     .sp-btn-label {
-      font-size: 12px;
+      font-size: 9px;
       line-height: 1;
       letter-spacing: 0.3px;
       color: var(--text-white);
@@ -412,8 +411,8 @@
     }
 
     .sp-btn-chevron {
-      width: 10px;
-      height: 10px;
+      width: 7px;
+      height: 7px;
       flex-shrink: 0;
       transition: transform 0.32s cubic-bezier(.4,0,.2,1);
       opacity: 0.75;
@@ -421,17 +420,9 @@
 
     .sp-panel.open .sp-btn-chevron { transform: rotate(180deg); }
 
-    .sp-btn-tier {
-      font-size: 9px;
-      line-height: 1;
-      padding: 2px 6px;
-      border-radius: 999px;
-      background: linear-gradient(180deg, rgba(255,212,55,0.22) 0%, rgba(255,196,0,0.14) 100%);
-      border: 1px solid rgba(255,196,0,0.38);
-      color: var(--gold-4);
-      letter-spacing: 0.2px;
-      white-space: nowrap;
-    }
+    .sp-panel.open #toggleBtn { display: none; }
+
+
 
     /* Shimmer sweep */
     .sp-btn-sweep {
@@ -532,8 +523,7 @@
   <!-- Collapsed toggle button -->
   <button class="sp-toggle-btn" id="toggleBtn" onclick="togglePanel()">
     <div class="sp-btn-sweep"></div>
-    <span class="sp-btn-label">Season Pass</span>
-    <span class="sp-btn-tier" id="btnTierBadge">T1</span>
+    <span class="sp-btn-label">Show Season Pass</span>
     <svg class="sp-btn-chevron" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M1 1L5 5L9 1" stroke="rgba(255,255,255,0.75)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
@@ -549,6 +539,11 @@
         <div class="sp-season">SEASON I</div>
       </div>
       <div class="sp-xp-label" id="xpLabel">0 / 3000 XP</div>
+      <button onclick="togglePanel()" style="background:none;border:none;cursor:pointer;padding:2px;display:flex;align-items:center;opacity:0.5;transition:opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.5">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M1 1L9 9M9 1L1 9" stroke="rgba(255,255,255,0.9)" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
     </div>
 
     <!-- Track -->
@@ -635,7 +630,6 @@
   const trackScroll = document.getElementById('trackScroll');
   const toggleBtn   = document.getElementById('toggleBtn');
   const btnSweep    = toggleBtn.querySelector('.sp-btn-sweep');
-  const btnTierBadge = document.getElementById('btnTierBadge');
   const spPanel     = document.getElementById('spPanel');
 
   /* ─── Toggle panel ──────────────────────────────────────── */
@@ -643,6 +637,7 @@
     spPanel.classList.toggle('open');
     if (spPanel.classList.contains('open')) {
       requestAnimationFrame(() => {
+        repositionTrackBg();
         updateFillBar(
           deriveTierState(displayedXp).tiersFullyDone,
           deriveTierState(displayedXp).pctInTier
@@ -698,7 +693,7 @@
             </div>
           </div>
         </div>
-        <div class="tier-num-label">T${tierNum}</div>
+
       `;
       trackInner.appendChild(col);
     });
@@ -723,25 +718,11 @@
 
   /* ─── Update fill bar position ──────────────────────────── */
   function updateFillBar(tiersFullyDone, pctInTier) {
-    const tierCount = SEASON_TIERS;
-    const tierW = trackInner.scrollWidth / tierCount;
-    const nodeRadius = 22; /* --node-r */
-
-    /* Each tier's center is at (i + 0.5) * tierW.
-       The fill travels from node center to node center. */
-    const firstNodeCx = tierW * 0.5;
-    const lastNodeCx  = tierW * (tierCount - 0.5);
-    const totalSpan   = lastNodeCx - firstNodeCx;
-
-    const completedSpan = tiersFullyDone === 0
-      ? 0
-      : (tierW * (tiersFullyDone - 1) + tierW * pctInTier);
-
-    /* Pixel offset from the left edge of the rail to the fill end */
-    const fillPx = firstNodeCx + completedSpan;
-
-    const railW = trackBg.offsetWidth || 1;
-    const pct   = Math.min(100, (fillPx / railW) * 100);
+    /* Rail now spans exactly firstNodeCx → lastNodeCx.
+       Fill is 0% at tier 1 node, 100% at tier 30 node. */
+    const span     = SEASON_TIERS - 1;   /* 29 gaps between 30 nodes */
+    const progress = Math.min(tiersFullyDone + pctInTier, span);
+    const pct      = Math.min(100, (progress / span) * 100);
     trackFill.style.width = pct + '%';
   }
 
@@ -772,9 +753,6 @@
 
     updateFillBar(tiersFullyDone, pctInTier);
     displayedXp = xp;
-
-    /* Update button badge */
-    if (btnTierBadge) btnTierBadge.textContent = 'T' + currentTier;
 
     /* Footer */
     if (currentTier >= SEASON_TIERS && xp >= TOTAL_SEASON_XP) {
@@ -959,11 +937,53 @@
 
   window.handlePortalsMessage = handlePortalsMessage;
 
+  /* ─── Reposition rail to node row ───────────────────────── */
+  function repositionTrackBg() {
+    const firstRow = document.querySelector('.tier-track-row');
+    const inner    = document.getElementById('trackInner');
+    if (!firstRow || !inner) return;
+
+    /* Vertical: align with center of the node row */
+    const innerRect = inner.getBoundingClientRect();
+    const rowRect   = firstRow.getBoundingClientRect();
+    const topOffset = (rowRect.top - innerRect.top) + rowRect.height / 2;
+    trackBg.style.top       = topOffset + 'px';
+    trackBg.style.transform = 'translateY(-50%)';
+
+    /* Horizontal: constrain rail to span exactly first→last node center */
+    const tierW       = trackInner.scrollWidth / SEASON_TIERS;
+    const firstNodeCx = tierW * 0.5;
+    const lastNodeCx  = tierW * (SEASON_TIERS - 0.5);
+    trackBg.style.left  = firstNodeCx + 'px';
+    trackBg.style.width = (lastNodeCx - firstNodeCx) + 'px';
+  }
+
+  /* ─── Drag-to-scroll ────────────────────────────────────── */
+  (function() {
+    const el = document.getElementById('trackScroll');
+    if (!el) return;
+    let isDown = false, startX = 0, scrollLeft = 0;
+    el.addEventListener('mousedown', e => {
+      isDown = true;
+      startX = e.pageX - el.offsetLeft;
+      scrollLeft = el.scrollLeft;
+    });
+    el.addEventListener('mouseleave', () => { isDown = false; });
+    el.addEventListener('mouseup', () => { isDown = false; });
+    el.addEventListener('mousemove', e => {
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - el.offsetLeft;
+      el.scrollLeft = scrollLeft - (x - startX);
+    });
+  })();
+
   /* ─── Init ───────────────────────────────────────────────── */
   buildTiers();
   renderTiers(0);
 
   requestAnimationFrame(() => {
+    repositionTrackBg();
     updateFillBar(0, 0);
   });
 

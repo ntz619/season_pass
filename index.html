@@ -302,7 +302,7 @@
     }
 
     .tier.unlocked:not(.current) .tier-node-inner::before {
-      content: '✓';
+      content: '\2713';
     }
 
     .tier.unlocked:not(.current) .node-num { display: none; }
@@ -610,7 +610,7 @@
   let pollHandle      = null;
   let hasInitialLoad  = false;
   let animFrame       = null;
-  let lastKnownXp     = 0;  // tracks last polled XP for gain detection
+  let lastKnownXp     = 0;
 
   /* ─── DOM refs ──────────────────────────────────────────── */
   const trackInner  = document.getElementById('trackInner');
@@ -816,20 +816,22 @@
 
   /* ─── Polling ─────────────────────────────────────────────── */
   async function refreshPlayer() {
-    if (!currentUsername) return;
+    if (!currentUsername) return false;
     try {
       const row  = await getPlayerSeasonProgress(currentUsername);
-      if (!row || row.xp == null) return;
+      if (!row || row.xp == null) return false;
       const newXp = Number(row.xp) || 0;
-      if (newXp === lastKnownXp) return;  // nothing changed
+      if (newXp === lastKnownXp) return false;
 
       const gain   = newXp - lastKnownXp;
       lastKnownXp  = newXp;
 
       if (gain > 0) triggerButtonEffects(gain);
       animateTo(newXp);
+      return true;
     } catch (e) {
       console.error('Season pass poll failed:', e);
+      return false;
     }
   }
 
@@ -841,7 +843,6 @@
   /* ─── Portals message handler (READ USERNAME ONLY) ──────── */
   async function handlePortalsMessage(message) {
     try {
-      // Parse just enough to get the username — no writes happen here
       const raw      = String(message || '').trim();
       let payload    = {};
       try { payload  = JSON.parse(raw); } catch {}
@@ -852,7 +853,6 @@
 
       if (!username) return;
 
-      // If this is the first time we see a username, load and start polling
       if (username !== currentUsername) {
         currentUsername = username;
         lastKnownXp     = 0;
@@ -860,12 +860,21 @@
       }
 
       if (!hasInitialLoad) {
-  hasInitialLoad = true;
-  startPolling();
-}
+        hasInitialLoad = true;
+        startPolling();
+      }
 
-// Every message triggers an immediate refresh
-await refreshPlayer();
+      // Brief delay so the XP Dashboard iframe finishes writing to the DB
+      // before we read. The dashboard's patch_player_progress RPC typically
+      // completes in ~50-200ms; 500ms gives ample headroom.
+      await new Promise(r => setTimeout(r, 500));
+      const changed = await refreshPlayer();
+
+      // If XP hasn't landed yet and the message carried an xp_gain, retry once
+      if (!changed && Number(payload.xp_gain) > 0) {
+        await new Promise(r => setTimeout(r, 800));
+        await refreshPlayer();
+      }
     } catch (e) {
       console.error('Season pass message error:', e, message);
     }
